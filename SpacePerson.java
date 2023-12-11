@@ -1,45 +1,46 @@
-import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Scanner;
+import java.security.InvalidKeyException;
+import java.util.Base64;
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
 
 public class SpacePerson {
 
     public static void main(String[] args) {
-        // Get the space person alphabet
+
         Map<Character, Character> spacePersonAlphabet = createSpacePersonAlphabet();
 
-        // Prompt the user for input
+
         Scanner scanner = new Scanner(System.in);
-        System.out.print("Enter an English string: ");
-        String englishString = scanner.nextLine().toUpperCase(); // Convert to uppercase for consistency
-        // Convert the English string to a space person string
+        System.out.print("English string: ");
+        String englishString = scanner.nextLine().toUpperCase();
+
         StringBuilder spacePersonString = new StringBuilder();
         for (char letter : englishString.toCharArray()) {
             char spacePersonSymbol = spacePersonAlphabet.getOrDefault(letter, letter);
             spacePersonString.append(spacePersonSymbol);
         }
-        // Display the space person string
-        System.out.println("Space Person String: " + spacePersonString.toString());
+
+        System.out.println("Space Person: " + spacePersonString.toString());
+
         try {
-            // Compute and display the SHA-256 hash of the space person string
-            String hash = calculateSHA256(spacePersonString.toString());
-            System.out.println("SHA-256 Hash of Space Person String: " + hash);
-
-
-        } catch (NoSuchAlgorithmException e) {
+            String hmacKey = "PSU";
+            String hmac = calculateHMAC(spacePersonString.toString(), hmacKey);
+            System.out.println("HMAC-SHA256: " + hmac);
+        } catch (NoSuchAlgorithmException | InvalidKeyException e) {
             e.printStackTrace();
         }
 
-        // Separate Caesar cipher part
-        System.out.print("Enter shift value (integer) for Caesar cipher: ");
+        System.out.print("Shift value for Caesar cipher: ");
         int shiftValue = scanner.nextInt();
-        scanner.nextLine(); // Consume the newline character left by nextInt()
+        scanner.nextLine(); 
         bruteForceDecrypt(englishString);
 
 
-        // Perform Caesar cipher shift on the English alphabet
+
         String encryptedCaesarCipher = encrypt(englishString, shiftValue);
         System.out.println("Caesar Cipher: " + encryptedCaesarCipher);
 
@@ -76,16 +77,14 @@ public class SpacePerson {
         return encryptedText.toString();
     }
 
-    private static String calculateSHA256(String data) throws NoSuchAlgorithmException {
-        MessageDigest digest = MessageDigest.getInstance("SHA-256");
-        byte[] hashBytes = digest.digest(data.getBytes());
-
-        StringBuilder hashStringBuilder = new StringBuilder();
-        for (byte hashByte : hashBytes) {
-            hashStringBuilder.append(String.format("%02x", hashByte));
-        }
-
-        return hashStringBuilder.toString();
+    private static String calculateHMAC(String data, String key)
+            throws NoSuchAlgorithmException, InvalidKeyException {
+        String algorithm = "HmacSHA256";
+        Mac mac = Mac.getInstance(algorithm);
+        SecretKeySpec secretKeySpec = new SecretKeySpec(key.getBytes(), algorithm);
+        mac.init(secretKeySpec);
+        byte[] hmacBytes = mac.doFinal(data.getBytes());
+        return Base64.getEncoder().encodeToString(hmacBytes);
     }
     private static void bruteForceDecrypt(String encryptedText) {
         for (int shift = 0; shift < 26; shift++) {
